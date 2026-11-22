@@ -1,0 +1,17 @@
+{
+  "name": "focus-time",
+  "version": "1.0.0",
+  "description": "《专注时刻》核心计时与交互系统 - Nord 极简暗色番茄钟",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node test/server.js",
+    "test": "node test/run-tests.js"
+  },
+  "keywords": [
+    "pomodoro",
+    "nord",
+    "focus-timer"
+  ],
+  "author": "zwl <zwlong6@gmail.com>",
+  "license": "MIT"
+}
