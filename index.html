@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-mode="pomodoro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>《专注时刻 (Focus Time)》- Nord 极简暗色番茄钟</title>
+  <link rel="stylesheet" href="./src/nord-focus-style.css">
+  <style>
+    /* 页面全局布局与响应式网格 */
+    body {
+      background-color: var(--nord0);
+      color: var(--nord5);
+      font-family: var(--font-family-base);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-header {
+      border-bottom: 1px solid var(--nord1);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(46, 52, 64, 0.85);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--nord6);
+    }
+
+    .brand-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: var(--mode-accent);
+      box-shadow: var(--mode-accent-glow);
+      transition: all 0.3s ease;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 24px;
+      width: 100%;
+      box-sizing: border-box;
+      flex: 1;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 28px;
+      align-items: start;
+    }
+
+    @media (max-width: 860px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 计时器核心主卡片 */
+    .timer-card {
+      background: var(--nord1);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 36px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      box-shadow: var(--shadow-card);
+      position: relative;
+    }
+
+    .timer-container {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .progress-ring-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .timer-center-content {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .timer-digits {
+      font-family: var(--font-family-timer);
+      font-size: 64px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-feature-settings: "tnum" 1, "zero" 1;
+      font-feature-settings: "tnum" 1, "zero" 1;
+      text-shadow: var(--mode-accent-glow);
+      user-select: none;
+      color: var(--nord6);
+    }
+
+    .timer-digits.paused {
+      animation: pulse-pause 1.8s ease-in-out infinite;
+      color: var(--nord12);
+    }
+
+    @keyframes pulse-pause {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+
+    /* 侧边栏与卡片面板 */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .panel-card {
+      background: var(--nord1);
+      border: 1px solid var(--nord2);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .panel-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--nord6);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stats-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-box {
+      background: var(--nord2);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-family: var(--font-family-mono);
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--nord6);
+    }
+
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--nord4);
+      margin-top: 4px;
+    }
+
+    /* 任务列表条目 */
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: var(--nord2);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      border: 1px solid transparent;
+      transition: var(--transition-fast);
+    }
+
+    .task-item.active {
+      border-color: var(--mode-accent);
+      background: rgba(191, 97, 106, 0.15);
+    }
+
+    .app-footer {
+      border-top: 1px solid var(--nord1);
+      padding: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--nord3);
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部导航 -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <span>专注时刻 Focus Time</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px; font-size: 13px;">
+      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <input type="checkbox" id="sound-toggle" checked>
+        <span>提示音</span>
+      </label>
+      <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <input type="checkbox" id="notify-toggle" checked>
+        <span>桌面通知</span>
+      </label>
+    </div>
+  </header>
+
+  <!-- 核心主区域 -->
+  <main class="container">
+    <div class="main-grid">
+
+      <!-- 左侧：计时器核心与状态机控制 -->
+      <section class="timer-card">
+        
+        <!-- 模式分段选择器 -->
+        <div class="segmented-control">
+          <button class="mode-tab active" data-mode="pomodoro">番茄专注 (25m)</button>
+          <button class="mode-tab" data-mode="short-break">短休息 (5m)</button>
+          <button class="mode-tab" data-mode="long-break">长休息 (15m)</button>
+        </div>
+
+        <!-- 动态环形进度条与倒计时数字 -->
+        <div class="timer-container">
+          <svg id="progress-ring-svg" class="progress-ring-svg"></svg>
+          <div class="timer-center-content">
+            <span id="mode-badge" class="badge badge-pomodoro">番茄专注</span>
+            <div id="timer-digits" class="timer-digits">25:00</div>
+            <div id="fsm-state" style="font-size: 12px; color: var(--nord14); font-family: var(--font-family-mono);">IDLE (闲置就绪)</div>
+          </div>
+        </div>
+
+        <!-- 任务快捷关联 -->
+        <div style="width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 12px; color: var(--nord4); display: flex; justify-content: space-between;">
+            <span>当前关联专注任务：</span>
+          </div>
+          <select id="task-select" class="form-input" style="width: 100%;">
+            <option value="">-- 无标题专注 (默认) --</option>
+          </select>
+        </div>
+
+        <!-- 控制按钮组 -->
+        <div class="controls-row">
+          <button id="btn-toggle" class="btn btn-primary" style="min-width: 140px;">开始专注</button>
+          <button id="btn-pause" class="btn btn-secondary" disabled>暂停</button>
+          <button id="btn-reset" class="btn btn-ghost" disabled>放弃 / 重置</button>
+        </div>
+
+      </section>
+
+      <!-- 右侧：任务管理与数据战报 -->
+      <aside class="sidebar">
+
+        <!-- 今日战报看板 -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>今日专注战报</span>
+            <span style="font-size: 11px; color: var(--nord8);">TODAY</span>
+          </div>
+          <div class="stats-summary-grid">
+            <div class="stat-box">
+              <div id="stat-today-pomodoros" class="stat-val" style="color: var(--nord11);">0</div>
+              <div class="stat-lbl">完成番茄 (个)</div>
+            </div>
+            <div class="stat-box">
+              <div id="stat-today-minutes" class="stat-val" style="color: var(--nord8);">0</div>
+              <div class="stat-lbl">专注时长 (分钟)</div>
+            </div>
+          </div>
+
+          <!-- 近 7 日柱状走势图 -->
+          <div style="font-size: 12px; color: var(--nord4); margin-bottom: 8px;">近 7 日专注趋势：</div>
+          <div id="chart-trend" style="display: flex; height: 90px; gap: 8px; align-items: flex-end; padding: 8px 4px; background: var(--nord2); border-radius: var(--radius-sm);"></div>
+        </div>
+
+        <!-- 专注任务库 -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>任务库</span>
+            <span style="font-size: 11px; color: var(--nord4);">TASKS</span>
+          </div>
+          
+          <!-- 新建任务输入 -->
+          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <input type="text" id="input-new-task" class="form-input" placeholder="输入新任务名称..." style="flex: 1;">
+            <button id="btn-add-task" class="btn btn-secondary" style="padding: 8px 14px;">添加</button>
+          </div>
+
+          <!-- 任务列表容器 -->
+          <div id="task-list" style="max-height: 220px; overflow-y: auto;"></div>
+        </div>
+
+        <!-- 任务专注分布 -->
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>专注时长分布</span>
+            <span style="font-size: 11px; color: var(--nord9);">DISTRIBUTION</span>
+          </div>
+          <div id="chart-distribution"></div>
+        </div>
+
+      </aside>
+
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    《专注时刻》· 基于 Nord 极简暗色规范构建 · 生产力心流引擎
+  </footer>
+
+  <!-- 引入模块脚本 -->
+  <script src="./src/nord-theme-tokens.js"></script>
+  <script src="./src/storage.js"></script>
+  <script src="./src/timer-engine.js"></script>
+  <script src="./src/progress-ring.js"></script>
+  <script src="./src/notifications.js"></script>
+  <script src="./src/app.js"></script>
+  <script>
+    // 启动应用
+    window.addEventListener('DOMContentLoaded', () => {
+      const app = new FocusTimeApp();
+      app.init();
+      window.__FOCUS_APP__ = app;
+    });
+  </script>
+</body>
+</html>
